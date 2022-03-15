@@ -2,7 +2,8 @@ from tkinter import *
 from tkinter import messagebox
 import winsound
 import random
-import  pyperclip
+import pyperclip
+import json
 
 PINK = "#e2979c"
 RED = "#e7305b"
@@ -47,6 +48,9 @@ def save():
     web_entry = website_entry.get()
     em_entry = email_entry.get()
     pas_entry = password_entry.get()
+    new_data = {
+        web_entry: {"email": em_entry, "Password": pas_entry}
+    }
     if len(web_entry) == 0 or len(pas_entry) == 0 or len(em_entry) == 0:
         messagebox.askretrycancel(message="Please don't leave anything blank")
     else:
@@ -54,13 +58,35 @@ def save():
                                        message=f"These are the details that are entered User:{email_entry.get()}| "
                                                f"Pass:{password_entry.get()}")
         if is_ok:
-            with open("data.txt", mode='a') as file:
-                file.write(f"Website:{website_entry.get()}| User:{email_entry.get()}|")
-                file.write(f"Pass:{password_entry.get()} \n")
-                # print(password_entry.get())
-                website_entry.delete(0, END)
-                password_entry.delete(0, END)
-                winsound.MessageBeep()
+            try:
+                with open("pas.json", mode='r') as file:
+                    data = json.load(file)
+            except FileNotFoundError:
+                data = new_data
+            else:
+                data.update(new_data)
+            finally:
+                with open("pas.json", mode='w') as file:
+                    json.dump(data, file, indent=2)
+                    # print(password_entry.get())
+                    website_entry.delete(0, END)
+                    password_entry.delete(0, END)
+                    winsound.MessageBeep()
+# ---------------------------- search ------------------------------- #
+
+
+def search():
+    msg = ""
+    try:
+        with open("pas.json", mode='r') as file:
+            data = json.load(file)
+            website = data[website_entry.get()]["email"]
+            password = data[website_entry.get()]["Password"]
+            msg = f"email:{website} \n password:{password}"
+    except KeyError or FileNotFoundError:
+        msg = "The website entry has not been recorded"
+    finally:
+        messagebox.showinfo(title="Info", message=msg)
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -83,19 +109,21 @@ password_label = Label(text="Password:")
 password_label.grid(row=3, column=0)
 
 # Entries
-website_entry = Entry(width=45)
-website_entry.grid(row=1, column=1, columnspan=2)
+website_entry = Entry(width=28)
+website_entry.grid(row=1, column=1, columnspan=1)
 website_entry.focus()
-email_entry = Entry(width=45)
+email_entry = Entry(width=53)
 email_entry.grid(row=2, column=1, columnspan=2)
 email_entry.insert(0, "anandankur2816@gmail.com")
-password_entry = Entry(width=26)
+password_entry = Entry(width=28)
 password_entry.grid(row=3, column=1)
 
 # Buttons
-generate_password_button = Button(text="Generate Password", command=gen_password)
+search_website_button = Button(text="Search", bg="Blue", width=20, command=search)
+search_website_button.grid(column=2,row=1)
+generate_password_button = Button(text="Generate Password", width=20, command=gen_password, bg=PINK)
 generate_password_button.grid(row=3, column=2)
-add_button = Button(text="Add", width=36, command=save)
+add_button = Button(text="Add", width=46, command=save, bg=GREEN)
 add_button.grid(row=4, column=1, columnspan=2)
 
 window.mainloop()
